@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import {
   User,
   Briefcase,
@@ -12,10 +12,11 @@ import {
   ChevronDown,
   ChevronRight,
   Eye,
-  EyeOff
+  EyeOff,
+  Check
 } from 'lucide-react';
 
-export default function ResumeEditor({ data, setData, isOpen, onClose }) {
+function ResumeEditor({ data, setData, isOpen, onClose }) {
   const [activeTab, setActiveTab] = useState('header');
 
   if (!isOpen) return null;
@@ -279,9 +280,15 @@ export default function ResumeEditor({ data, setData, isOpen, onClose }) {
           <FileText size={18} className="cv-editor-icon" />
           <span>Edit CV Details</span>
         </div>
-        <button className="cv-close-btn" onClick={onClose} title="Close drawer">
-          <X size={18} />
-        </button>
+        <div className="cv-editor-header-actions">
+          <button className="cv-done-btn" onClick={onClose} title="Save changes and close editor">
+            <Check size={14} />
+            <span>Done</span>
+          </button>
+          <button className="cv-close-btn" onClick={onClose} title="Close drawer">
+            <X size={18} />
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -698,6 +705,16 @@ export default function ResumeEditor({ data, setData, isOpen, onClose }) {
           </div>
         )}
       </div>
+
+      {/* Mobile Sticky Action Bar */}
+      <div className="cv-editor-mobile-footer mobile-only">
+        <button className="cv-mobile-save-preview-btn" onClick={onClose}>
+          <Check size={16} />
+          <span>Save & View Resume</span>
+        </button>
+      </div>
     </aside>
   );
 }
+
+export default memo(ResumeEditor);

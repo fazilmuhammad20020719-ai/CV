@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { memo } from 'react';
 
-export default function ResumePreview({
+function ResumePreview({
   data,
   pageMode = 'auto', // 'auto' | '1-page' | '2-page' | 'page-1' | 'page-2'
   scale = 1,
@@ -458,31 +458,60 @@ export default function ResumePreview({
     </div>
   );
 
+  const isTwoPageGrid = !isSinglePage;
+  const isSideBySide =
+    isTwoPageGrid && typeof window !== 'undefined' && window.innerWidth > 1750;
+  const layoutWidth = isSideBySide ? 1628 : 794;
+  const layoutHeight = isSinglePage ? 1163 : isSideBySide ? 1183 : 2366;
+  const scaledWidth = Math.round(layoutWidth * scale);
+  const scaledHeight = Math.round(layoutHeight * scale);
+
   return (
-    <div
-      className="cv-render-wrapper"
-      style={{ transform: `scale(${scale})`, transformOrigin: 'top center' }}
-    >
-      {/* Visual Canvas Display */}
-      {isSinglePage ? (
-        <div className="cv-pages-container single-page">
-          <div className="cv-page-wrapper">
-            <div className="cv-page-label">Page 1 of 1 (Executive Fit)</div>
-            {renderSinglePage()}
-          </div>
+    <>
+      <div
+        className="cv-scale-container"
+        style={{
+          width: `${scaledWidth}px`,
+          minWidth: `${scaledWidth}px`,
+          maxWidth: `${scaledWidth}px`,
+          height: `${scaledHeight}px`,
+          position: 'relative',
+          margin: '0 auto'
+        }}
+      >
+        <div
+          className="cv-render-wrapper"
+          style={{
+            width: `${layoutWidth}px`,
+            transform: `scale(${scale})`,
+            transformOrigin: 'top left',
+            position: 'absolute',
+            top: 0,
+            left: 0
+          }}
+        >
+          {/* Visual Canvas Display */}
+          {isSinglePage ? (
+            <div className="cv-pages-container single-page">
+              <div className="cv-page-wrapper">
+                <div className="cv-page-label">Page 1 of 1 (Executive Fit)</div>
+                {renderSinglePage()}
+              </div>
+            </div>
+          ) : (
+            <div className="cv-pages-container two-page-grid">
+              <div className="cv-page-wrapper">
+                <div className="cv-page-label">Page 1 of 2</div>
+                {renderPage1()}
+              </div>
+              <div className="cv-page-wrapper">
+                <div className="cv-page-label">Page 2 of 2</div>
+                {renderPage2()}
+              </div>
+            </div>
+          )}
         </div>
-      ) : (
-        <div className="cv-pages-container two-page-grid">
-          <div className="cv-page-wrapper">
-            <div className="cv-page-label">Page 1 of 2</div>
-            {renderPage1()}
-          </div>
-          <div className="cv-page-wrapper">
-            <div className="cv-page-label">Page 2 of 2</div>
-            {renderPage2()}
-          </div>
-        </div>
-      )}
+      </div>
 
       {/* For Print: Outputs flawless A4 sheets */}
       <div className="cv-print-only-container">
@@ -496,6 +525,8 @@ export default function ResumePreview({
           </>
         )}
       </div>
-    </div>
+    </>
   );
 }
+
+export default memo(ResumePreview);
