@@ -628,21 +628,35 @@ a.cv-contact-value.cv-contact-link {
 }
 
 .cv-photo-frame {
-  width: 106px;
-  height: 136px;
-  border: 3.5px solid #ffffff;
+  width: 148px;
+  height: 177px;
   border-radius: 4px;
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-  background-color: #ffffff;
 }
 
 .cv-photo-img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  object-position: top center;
+  background-size: cover;
+  background-position: top center;
+  background-repeat: no-repeat;
   display: block;
+}
+
+.cv-photo-placeholder {
+  width: 100%;
+  height: 100%;
+  background-color: #d4972b;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-align: center;
+  padding: 6px;
 }
 
 /* Body Content Area */
@@ -736,6 +750,41 @@ a.cv-contact-value.cv-contact-link {
   flex: 1;
 }
 
+/* Skills Grid & Groups */
+.cv-skills-groups-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  column-gap: 16px;
+  margin: 6px 0 10px 0;
+}
+
+.cv-skills-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.cv-skills-industries {
+  font-size: 10.5px;
+  line-height: 1.35;
+  color: #111;
+  margin: 0 0 8px 0;
+}
+
+.cv-skills-industries-label {
+  font-weight: 700;
+  letter-spacing: 0.8px;
+}
+
+.cv-skills-group-heading {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #111827;
+  margin-bottom: 5px;
+  padding-bottom: 2px;
+}
+
 /* Fallback Skills Grid */
 .cv-skills-grid {
   display: grid;
@@ -817,6 +866,12 @@ a.cv-contact-value.cv-contact-link {
   padding-left: 12px;
 }
 
+.cv-exp-subgroup.no-heading {
+  padding-left: 0;
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+
 .cv-subgroup-heading {
   font-size: 11px;
   font-weight: 700;
@@ -871,6 +926,32 @@ a.cv-contact-value.cv-contact-link {
   margin-bottom: 12px;
 }
 
+/* A job split across page-breakable pieces: remove the wrapper margins between pieces */
+.cv-flush-top {
+  margin-top: 0 !important;
+}
+
+.cv-flush-bottom {
+  margin-bottom: 0 !important;
+}
+
+/* A bullet continuing a sub-section in a new piece gets the list's item gap */
+.cv-exp-subgroup.cv-bullet-cont {
+  margin-top: 3px !important;
+}
+
+.density-compact .cv-exp-subgroup.cv-bullet-cont {
+  margin-top: 2px !important;
+}
+
+.density-spacious .cv-exp-subgroup.cv-bullet-cont {
+  margin-top: 4.5px !important;
+}
+
+.cv-page.cv-single-fit .cv-exp-subgroup.cv-bullet-cont {
+  margin-top: 5px !important;
+}
+
 /* Education */
 .cv-education-section {
   margin-top: 10px;
@@ -900,18 +981,25 @@ a.cv-contact-value.cv-contact-link {
 
 .cv-languages-row {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 6px 20px 2px 20px;
+  gap: 8px;
+  padding: 4px 0 2px 0;
 }
 
 .cv-language-badge {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 700;
   color: #000000;
+}
+
+.cv-lang-pipe {
+  color: #444444;
+  font-size: 11px;
+  font-weight: 400;
+  margin: 0 4px;
 }
 
 .cv-lang-sep {
@@ -921,6 +1009,30 @@ a.cv-contact-value.cv-contact-link {
 
 .cv-lang-level {
   font-weight: 500;
+}
+
+/* Declaration */
+.cv-declaration-section {
+  margin-top: 10px;
+}
+
+.cv-declaration-content {
+  margin-top: 4px;
+}
+
+.cv-declaration-text {
+  font-size: 10.5px;
+  line-height: 1.45;
+  color: #111111;
+  margin: 0 0 6px 0;
+}
+
+.cv-declaration-signature {
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #000000;
 }
 
 /* Print Container Hide on Screen */
@@ -1134,6 +1246,31 @@ a.cv-contact-value.cv-contact-link {
   padding: 12px;
   border-radius: 8px;
   border: 1px solid var(--border-color);
+}
+
+.cv-range-row {
+  display: grid;
+  grid-template-columns: 84px 1fr 44px;
+  align-items: center;
+  gap: 10px;
+}
+
+.cv-range-label {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.cv-range {
+  width: 100%;
+  accent-color: #58a6ff;
+  cursor: pointer;
+}
+
+.cv-range-value {
+  font-size: 11.5px;
+  color: #f0f6fc;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 .cv-subfield-header {
@@ -1350,90 +1487,6 @@ a.cv-contact-value.cv-contact-link {
   to {
     opacity: 1;
     transform: translateY(0);
-  }
-}
-
-/* ==========================================================================
-   PRINT MEDIA RULES (PIXEL-PERFECT A4 MULTI-PAGE PRINTING)
-   ========================================================================== */
-@media print {
-  @page {
-    size: A4 portrait;
-    margin: 0;
-  }
-
-  html, body {
-    background: #ffffff !important;
-    color: #000000 !important;
-    width: 210mm;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-
-  .cv-top-nav,
-  .cv-editor-drawer,
-  .cv-page-label,
-  .cv-toast,
-  .cv-pages-container,
-  .cv-mobile-bottom-nav,
-  .cv-mobile-tools-tray {
-    display: none !important;
-  }
-
-  .cv-scale-container {
-    width: auto !important;
-    height: auto !important;
-    min-width: auto !important;
-    max-width: none !important;
-    transform: none !important;
-    position: static !important;
-    display: block !important;
-  }
-
-  .cv-app-container,
-  .cv-workspace,
-  .cv-canvas-area,
-  .cv-canvas-inner,
-  .cv-render-wrapper {
-    background: transparent !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    box-shadow: none !important;
-    transform: none !important;
-    display: block !important;
-    overflow: visible !important;
-  }
-
-  .cv-print-only-container {
-    display: block !important;
-  }
-
-  .cv-page {
-    box-shadow: none !important;
-    margin: 0 !important;
-    width: 210mm !important;
-    height: 297mm !important;
-    max-height: 297mm !important;
-    page-break-inside: avoid !important;
-    page-break-after: always !important;
-    overflow: hidden !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-
-  .cv-page:last-child {
-    page-break-after: auto !important;
-    break-after: auto !important;
-  }
-
-  .cv-page-break-print {
-    page-break-before: always !important;
-    break-before: page !important;
-  }
-
-  .cv-header-banner {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
   }
 }
 
@@ -1953,3 +2006,167 @@ a.cv-contact-value.cv-contact-link {
   }
 }
 
+
+/* Disabled toolbar buttons (e.g. Undo with no history) */
+.cv-icon-btn:disabled,
+.cv-tray-action-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Contact editor: label/value row with the optional link underneath */
+.cv-contact-edit-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed var(--border-color);
+}
+
+.cv-contact-edit-block:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.cv-input-link {
+  width: auto;
+  margin-right: 30px;
+  font-size: 11px;
+  color: #8b949e;
+}
+
+.cv-exp-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.cv-mini-add-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.cv-field input:disabled {
+  opacity: 0.5;
+}
+
+/* PDF export quality choice */
+.cv-choice-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cv-choice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  text-align: left;
+  padding: 9px 12px;
+  background: #0d1117;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  cursor: pointer;
+  color: #f0f6fc;
+}
+
+.cv-choice.active {
+  border-color: #58a6ff;
+  box-shadow: 0 0 0 3px rgba(56, 139, 253, 0.2);
+}
+
+.cv-choice-title {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.cv-choice-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ==========================================================================
+   PRINT / REAL PDF (browser "Save as PDF"): only the CV pages, one per A4 sheet,
+   as real selectable text. Kept last so it overrides the responsive rules above.
+   ========================================================================== */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  html,
+  body {
+    width: 210mm !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    overflow: visible !important;
+  }
+
+  /* Everything except the print copy of the CV */
+  .cv-top-nav,
+  .cv-editor-drawer,
+  .cv-toast,
+  .cv-mobile-bottom-nav,
+  .cv-mobile-tools-tray,
+  .cv-scale-container,
+  .cv-measure-container,
+  .cv-page-break-print {
+    display: none !important;
+  }
+
+  /* App shell: plain blocks with no size, spacing or scrolling of their own */
+  .cv-app-container,
+  .cv-workspace,
+  .cv-canvas-area,
+  .cv-canvas-area.editor-active,
+  .cv-canvas-inner {
+    display: block !important;
+    position: static !important;
+    width: auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: none !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+    transform: none !important;
+  }
+
+  .cv-print-only-container {
+    display: block !important;
+    width: 210mm !important;
+  }
+
+  .cv-print-only-container .cv-page {
+    width: 210mm !important;
+    /* A hair under 297mm so rounding never spills onto an extra blank sheet */
+    height: 296.8mm !important;
+    min-height: 0 !important;
+    max-height: 296.8mm !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    overflow: hidden !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    break-after: page !important;
+    page-break-after: always !important;
+  }
+
+  .cv-print-only-container .cv-page:last-child {
+    break-after: auto !important;
+    page-break-after: auto !important;
+  }
+}

@@ -18,7 +18,10 @@ import {
   FileDown,
   Loader2,
   X,
-  Sparkles
+  Sparkles,
+  RefreshCcw,
+  Undo2,
+  Redo2
 } from 'lucide-react';
 import { colorThemes } from '../data/resumeData';
 
@@ -42,7 +45,12 @@ function Toolbar({
   onExportPdf,
   isExporting = false,
   isMobileToolsOpen = false,
-  setIsMobileToolsOpen = () => {}
+  setIsMobileToolsOpen = () => {},
+  onResetPreset = () => {},
+  onUndo = () => {},
+  onRedo = () => {},
+  canUndo = false,
+  canRedo = false
 }) {
   const fileInputRef = useRef(null);
   const jsonInputRef = useRef(null);
@@ -158,17 +166,28 @@ function Toolbar({
             >
               Asrif Ahamed
             </button>
+            <button
+              className={`cv-preset-btn ${selectedPreset === 'fazil' ? 'active' : ''}`}
+              onClick={() => onSelectPreset('fazil')}
+              title="Load Fazil Muhammad resume"
+            >
+              Fazil Muhammad
+            </button>
           </div>
 
           {/* Mobile Preset Quick Switcher */}
           <button
             className="cv-mobile-preset-pill mobile-only"
-            onClick={() => onSelectPreset(selectedPreset === 'rifkan' ? 'asrif' : 'rifkan')}
+            onClick={() => {
+              const order = ['rifkan', 'asrif', 'fazil'];
+              const next = order[(order.indexOf(selectedPreset) + 1) % order.length];
+              onSelectPreset(next);
+            }}
             title="Tap to switch resume preset"
           >
             <Sparkles size={12} className="cv-pill-icon" />
             <span className="cv-pill-name">
-              {selectedPreset === 'rifkan' ? 'Riskan' : 'Asrif'}
+              {selectedPreset === 'rifkan' ? 'Riskan' : selectedPreset === 'asrif' ? 'Asrif' : 'Fazil'}
             </span>
             <span className="cv-pill-switch">Switch</span>
           </button>
@@ -293,6 +312,26 @@ function Toolbar({
             <span>Tools</span>
           </button>
 
+          {/* Undo / Redo (Desktop) */}
+          <div className="cv-zoom-group desktop-only">
+            <button
+              className="cv-icon-btn"
+              onClick={onUndo}
+              disabled={!canUndo}
+              title="Undo (Ctrl+Z)"
+            >
+              <Undo2 size={15} />
+            </button>
+            <button
+              className="cv-icon-btn"
+              onClick={onRedo}
+              disabled={!canRedo}
+              title="Redo (Ctrl+Y)"
+            >
+              <Redo2 size={15} />
+            </button>
+          </div>
+
           {/* Photo Button (Desktop) */}
           <button
             className="cv-action-btn secondary desktop-only"
@@ -311,6 +350,16 @@ function Toolbar({
           >
             <Edit3 size={15} />
             <span>{isEditorOpen ? 'Close' : 'Edit CV'}</span>
+          </button>
+
+          {/* Reset edits (Desktop) */}
+          <button
+            className="cv-action-btn secondary desktop-only"
+            onClick={onResetPreset}
+            title="Discard your edits and restore the original CV content"
+          >
+            <RefreshCcw size={15} />
+            <span>Reset</span>
           </button>
 
           {/* Save JSON (Desktop) */}
@@ -466,6 +515,22 @@ function Toolbar({
             <div className="cv-tray-actions">
               <button
                 className="cv-tray-action-btn"
+                onClick={onUndo}
+                disabled={!canUndo}
+              >
+                <Undo2 size={14} />
+                <span>Undo</span>
+              </button>
+              <button
+                className="cv-tray-action-btn"
+                onClick={onRedo}
+                disabled={!canRedo}
+              >
+                <Redo2 size={14} />
+                <span>Redo</span>
+              </button>
+              <button
+                className="cv-tray-action-btn"
                 onClick={() => fileInputRef.current.click()}
               >
                 <ImageIcon size={14} />
@@ -491,6 +556,13 @@ function Toolbar({
               >
                 <Printer size={14} />
                 <span>Print Dialog</span>
+              </button>
+              <button
+                className="cv-tray-action-btn"
+                onClick={onResetPreset}
+              >
+                <RefreshCcw size={14} />
+                <span>Reset Edits</span>
               </button>
             </div>
           </div>

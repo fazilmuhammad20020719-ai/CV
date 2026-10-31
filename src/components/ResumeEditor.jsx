@@ -1,4 +1,4 @@
-import React, { useState, memo } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import {
   User,
   Briefcase,
@@ -13,10 +13,52 @@ import {
   ChevronRight,
   Eye,
   EyeOff,
-  Check
+  Check,
+  RotateCcw,
+  ArrowUp,
+  ArrowDown,
+  FileDown
 } from 'lucide-react';
+import { buildPdfFileName } from '../utils/exportPdf';
 
-function ResumeEditor({ data, setData, isOpen, onClose }) {
+const parseList = (text) => text.split(',').map((s) => s.trim()).filter(Boolean);
+
+/**
+ * Comma-separated list input. Keeps the raw text locally so commas and spaces
+ * can be typed freely, while the parsed list is saved on every change.
+ */
+function ListTextInput({ value, onChange, placeholder }) {
+  const [text, setText] = useState(value.join(', '));
+
+  // Follow outside changes (undo, reset) without clobbering what is being typed
+  useEffect(() => {
+    if (parseList(text).join('\n') !== value.join('\n')) setText(value.join(', '));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+
+  return (
+    <input
+      type="text"
+      value={text}
+      placeholder={placeholder}
+      onChange={(e) => {
+        setText(e.target.value);
+        onChange(parseList(e.target.value));
+      }}
+    />
+  );
+}
+
+function ResumeEditor({
+  data,
+  setData,
+  isOpen,
+  onClose,
+  pdfQuality = 'high',
+  setPdfQuality = () => {},
+  pdfMode = 'vector',
+  setPdfMode = () => {}
+}) {
   const [activeTab, setActiveTab] = useState('header');
 
   if (!isOpen) return null;
@@ -126,7 +168,107 @@ function ResumeEditor({ data, setData, isOpen, onClose }) {
     });
   };
 
+  // Grouped skills updater helpers
+  const updateGroupHeading = (gIdx, heading) => {
+    setData((prev) => {
+      const groups = (prev.skills.groups || []).map((g, i) => (i === gIdx ? { ...g, heading } : g));
+      return { ...prev, skills: { ...prev.skills, groups } };
+    });
+  };
+
+  const updateGroupSkill = (gIdx, sIdx, val) => {
+    setData((prev) => {
+      const groups = (prev.skills.groups || []).map((g, i) => {
+        if (i !== gIdx) return g;
+        const items = [...g.items];
+        items[sIdx] = val;
+        return { ...g, items };
+      });
+      return { ...prev, skills: { ...prev.skills, groups } };
+    });
+  };
+
+  const addGroupSkill = (gIdx) => {
+    setData((prev) => {
+      const groups = (prev.skills.groups || []).map((g, i) => {
+        if (i !== gIdx) return g;
+        return { ...g, items: [...g.items, 'New Skill'] };
+      });
+      return { ...prev, skills: { ...prev.skills, groups } };
+    });
+  };
+
+  const removeGroupSkill = (gIdx, sIdx) => {
+    setData((prev) => {
+      const groups = (prev.skills.groups || []).map((g, i) => {
+        if (i !== gIdx) return g;
+        return { ...g, items: g.items.filter((_, idx) => idx !== sIdx) };
+      });
+      return { ...prev, skills: { ...prev.skills, groups } };
+    });
+  };
+
+  const addGroup = () => {
+    setData((prev) => ({
+      ...prev,
+      skills: {
+        ...prev.skills,
+        groups: [...(prev.skills.groups || []), { heading: 'NEW GROUP', items: ['New Skill'] }]
+      }
+    }));
+  };
+
+  const removeGroup = (gIdx) => {
+    const group = data.skills.groups[gIdx];
+    if (!window.confirm(`Delete the skill group "${group.heading || 'Untitled'}" and its ${group.items.length} skills?`)) return;
+    setData((prev) => ({
+      ...prev,
+      skills: { ...prev.skills, groups: prev.skills.groups.filter((_, i) => i !== gIdx) }
+    }));
+  };
+
   // Experience editor
+  const addExperience = () => {
+    setData((prev) => ({
+      ...prev,
+      experiences: [
+        {
+          id: `exp-${Date.now()}`,
+          jobTitle: 'JOB TITLE',
+          company: 'Company Name',
+          location: 'City, Country',
+          dateRange: 'START – PRESENT',
+          sections: [
+            {
+              heading: '',
+              items: [{ label: 'Key Responsibility', text: 'Describe what you did and the result it achieved.' }]
+            }
+          ]
+        },
+        ...prev.experiences
+      ]
+    }));
+  };
+
+  const moveExperience = (expIdx, delta) => {
+    setData((prev) => {
+      const target = expIdx + delta;
+      if (target < 0 || target >= prev.experiences.length) return prev;
+      const exps = [...prev.experiences];
+      [exps[expIdx], exps[target]] = [exps[target], exps[expIdx]];
+      return { ...prev, experiences: exps };
+    });
+  };
+
+  const removeExperience = (expIdx) => {
+    const exp = data.experiences[expIdx];
+    if (!window.confirm(`Delete the job "${exp.jobTitle} – ${exp.company}"? (Ctrl+Z can undo this)`)) return;
+    setData((prev) => ({
+      ...prev,
+      experiences: prev.experiences.filter((_, i) => i !== expIdx)
+    }));
+  };
+
   const updateExp = (expIdx, field, val) => {
     setData((prev) => {
       const newExps = [...prev.experiences];
@@ -135,62 +277,65 @@ function ResumeEditor({ data, setData, isOpen, onClose }) {
     });
   };
 
+  // Immutable updates only: undo history and the original presets share these objects
+  const updateSections = (expIdx, fn) => {
+    setData((prev) => ({
+      ...prev,
+      experiences: prev.experiences.map((exp, i) =>
+        i === expIdx ? { ...exp, sections: fn(exp.sections) } : exp
+      )
+    }));
+  };
+
+  const updateSection = (expIdx, secIdx, fn) => {
+    updateSections(expIdx, (sections) =>
+      sections.map((sec, i) => (i === secIdx ? fn(sec) : sec))
+    );
+  };
+
   const updateSubgroupHeading = (expIdx, secIdx, heading) => {
-    setData((prev) => {
-      const newExps = [...prev.experiences];
-      newExps[expIdx].sections[secIdx].heading = heading;
-      return { ...prev, experiences: newExps };
-    });
+    updateSection(expIdx, secIdx, (sec) => ({ ...sec, heading }));
   };
 
   const updateExpItem = (expIdx, secIdx, itemIdx, field, val) => {
-    setData((prev) => {
-      const newExps = [...prev.experiences];
-      newExps[expIdx].sections[secIdx].items[itemIdx][field] = val;
-      return { ...prev, experiences: newExps };
-    });
+    updateSection(expIdx, secIdx, (sec) => ({
+      ...sec,
+      items: sec.items.map((item, i) => (i === itemIdx ? { ...item, [field]: val } : item))
+    }));
   };
 
   const addExpItem = (expIdx, secIdx) => {
-    setData((prev) => {
-      const newExps = [...prev.experiences];
-      newExps[expIdx].sections[secIdx].items.push({
-        label: 'Feature / Responsibility',
-        text: 'Detailed description of achievements and tasks.'
-      });
-      return { ...prev, experiences: newExps };
-    });
+    updateSection(expIdx, secIdx, (sec) => ({
+      ...sec,
+      items: [
+        ...sec.items,
+        {
+          label: 'Feature / Responsibility',
+          text: 'Detailed description of achievements and tasks.'
+        }
+      ]
+    }));
   };
 
   const removeExpItem = (expIdx, secIdx, itemIdx) => {
-    setData((prev) => {
-      const newExps = [...prev.experiences];
-      newExps[expIdx].sections[secIdx].items = newExps[expIdx].sections[
-        secIdx
-      ].items.filter((_, i) => i !== itemIdx);
-      return { ...prev, experiences: newExps };
-    });
+    updateSection(expIdx, secIdx, (sec) => ({
+      ...sec,
+      items: sec.items.filter((_, i) => i !== itemIdx)
+    }));
   };
 
   const addSubgroup = (expIdx) => {
-    setData((prev) => {
-      const newExps = [...prev.experiences];
-      newExps[expIdx].sections.push({
+    updateSections(expIdx, (sections) => [
+      ...sections,
+      {
         heading: 'New Category',
         items: [{ label: 'Item Name', text: 'Specification or description.' }]
-      });
-      return { ...prev, experiences: newExps };
-    });
+      }
+    ]);
   };
 
   const removeSubgroup = (expIdx, secIdx) => {
-    setData((prev) => {
-      const newExps = [...prev.experiences];
-      newExps[expIdx].sections = newExps[expIdx].sections.filter(
-        (_, i) => i !== secIdx
-      );
-      return { ...prev, experiences: newExps };
-    });
+    updateSections(expIdx, (sections) => sections.filter((_, i) => i !== secIdx));
   };
 
   // Education editor
@@ -335,6 +480,20 @@ function ResumeEditor({ data, setData, isOpen, onClose }) {
           <Languages size={14} />
           <span>Languages</span>
         </button>
+        <button
+          className={`cv-tab-btn ${activeTab === 'declaration' ? 'active' : ''}`}
+          onClick={() => setActiveTab('declaration')}
+        >
+          <FileText size={14} />
+          <span>Declaration</span>
+        </button>
+        <button
+          className={`cv-tab-btn ${activeTab === 'pdf' ? 'active' : ''}`}
+          onClick={() => setActiveTab('pdf')}
+        >
+          <FileDown size={14} />
+          <span>PDF</span>
+        </button>
       </div>
 
       <div className="cv-editor-body">
@@ -372,6 +531,44 @@ function ResumeEditor({ data, setData, isOpen, onClose }) {
               </button>
             </div>
 
+            {data.header.showPhoto && data.header.photoUrl && (
+              <div className="cv-subfield-section cv-photo-adjust">
+                <div className="cv-subfield-header">
+                  <label>Photo Framing</label>
+                  <button
+                    className="cv-mini-add-btn"
+                    onClick={() =>
+                      setData((prev) => ({
+                        ...prev,
+                        header: { ...prev.header, photoZoom: 1, photoPosX: 50, photoPosY: 0 }
+                      }))
+                    }
+                  >
+                    <RotateCcw size={12} /> Reset
+                  </button>
+                </div>
+                {[
+                  { field: 'photoZoom', label: 'Zoom', min: 1, max: 3, step: 0.05, fallback: 1, format: (v) => `${Math.round(v * 100)}%` },
+                  { field: 'photoPosX', label: 'Left / Right', min: 0, max: 100, step: 1, fallback: 50, format: (v) => `${v}%` },
+                  { field: 'photoPosY', label: 'Up / Down', min: 0, max: 100, step: 1, fallback: 0, format: (v) => `${v}%` }
+                ].map(({ field, label, min, max, step, fallback, format }) => (
+                  <div key={field} className="cv-range-row">
+                    <span className="cv-range-label">{label}</span>
+                    <input
+                      type="range"
+                      className="cv-range"
+                      min={min}
+                      max={max}
+                      step={step}
+                      value={data.header[field] ?? fallback}
+                      onChange={(e) => updateHeader(field, Number(e.target.value))}
+                    />
+                    <span className="cv-range-value">{format(data.header[field] ?? fallback)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div className="cv-subfield-section">
               <div className="cv-subfield-header">
                 <label>Contact Details List</label>
@@ -381,28 +578,37 @@ function ResumeEditor({ data, setData, isOpen, onClose }) {
               </div>
 
               {data.header.contacts.map((contact, i) => (
-                <div key={i} className="cv-contact-edit-row">
+                <div key={i} className="cv-contact-edit-block">
+                  <div className="cv-contact-edit-row">
+                    <input
+                      type="text"
+                      className="cv-input-label"
+                      value={contact.label}
+                      onChange={(e) => updateContact(i, 'label', e.target.value)}
+                      placeholder="Label (e.g. Mobile)"
+                    />
+                    <input
+                      type="text"
+                      className="cv-input-val"
+                      value={contact.value}
+                      onChange={(e) => updateContact(i, 'value', e.target.value)}
+                      placeholder="Value (e.g. +971...)"
+                    />
+                    <button
+                      className="cv-trash-btn"
+                      onClick={() => removeContact(i)}
+                      title="Remove item"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
                   <input
                     type="text"
-                    className="cv-input-label"
-                    value={contact.label}
-                    onChange={(e) => updateContact(i, 'label', e.target.value)}
-                    placeholder="Label (e.g. Mobile)"
+                    className="cv-input-val cv-input-link"
+                    value={contact.link || ''}
+                    onChange={(e) => updateContact(i, 'link', e.target.value || undefined)}
+                    placeholder="Link (optional): https://…, mailto:…, tel:…"
                   />
-                  <input
-                    type="text"
-                    className="cv-input-val"
-                    value={contact.value}
-                    onChange={(e) => updateContact(i, 'value', e.target.value)}
-                    placeholder="Value (e.g. +971...)"
-                  />
-                  <button
-                    className="cv-trash-btn"
-                    onClick={() => removeContact(i)}
-                    title="Remove item"
-                  >
-                    <Trash2 size={13} />
-                  </button>
                 </div>
               ))}
             </div>
@@ -443,39 +649,116 @@ function ResumeEditor({ data, setData, isOpen, onClose }) {
         {/* TAB 3: SKILLS & KNOWLEDGE */}
         {activeTab === 'skills' && (
           <div className="cv-form-section">
-            <h3 className="cv-form-heading">Skills & Knowledge (3 Columns)</h3>
+            <h3 className="cv-form-heading">Skills & Knowledge</h3>
             <p className="cv-help-text">
-              Organized into 3 balanced columns matching the reference layout.
+              Each group or column is shown side by side on the CV.
             </p>
-            {data.skills.columns.map((col, colIdx) => (
-              <div key={colIdx} className="cv-skill-column-box">
-                <div className="cv-subfield-header">
-                  <h4>Column {colIdx + 1}</h4>
-                  <button
-                    className="cv-mini-add-btn"
-                    onClick={() => addSkill(colIdx)}
-                  >
-                    <Plus size={13} /> Add Skill
-                  </button>
-                </div>
-                {col.map((skill, sIdx) => (
-                  <div key={sIdx} className="cv-skill-edit-row">
+            <div className="cv-field">
+              <label>Section Title</label>
+              <input
+                type="text"
+                value={data.skills.title}
+                onChange={(e) =>
+                  setData((prev) => ({ ...prev, skills: { ...prev.skills, title: e.target.value } }))
+                }
+              />
+            </div>
+            {data.skills.groups && (
+              <div className="cv-subfield-header">
+                <label>Skill Groups ({data.skills.groups.length})</label>
+                <button className="cv-mini-add-btn" onClick={addGroup}>
+                  <Plus size={13} /> Add Group
+                </button>
+              </div>
+            )}
+            {data.skills.groups ? (
+              data.skills.groups.map((group, gIdx) => (
+                <div key={gIdx} className="cv-skill-column-box">
+                  <div className="cv-subfield-header">
                     <input
                       type="text"
-                      value={skill}
-                      onChange={(e) => updateSkill(colIdx, sIdx, e.target.value)}
+                      className="cv-subgroup-title-input"
+                      value={group.heading}
+                      placeholder="Category Heading"
+                      onChange={(e) => updateGroupHeading(gIdx, e.target.value)}
                     />
+                    <div className="cv-subgroup-actions">
+                      <button
+                        className="cv-mini-add-btn"
+                        onClick={() => addGroupSkill(gIdx)}
+                      >
+                        <Plus size={13} /> Add Skill
+                      </button>
+                      <button
+                        className="cv-trash-btn"
+                        onClick={() => removeGroup(gIdx)}
+                        title="Delete this group"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  </div>
+                  {group.items.map((skill, sIdx) => (
+                    <div key={sIdx} className="cv-skill-edit-row">
+                      <input
+                        type="text"
+                        value={skill}
+                        onChange={(e) => updateGroupSkill(gIdx, sIdx, e.target.value)}
+                      />
+                      <button
+                        className="cv-trash-btn"
+                        onClick={() => removeGroupSkill(gIdx, sIdx)}
+                        title="Remove skill"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ))
+            ) : (
+              (data.skills.columns || []).map((col, colIdx) => (
+                <div key={colIdx} className="cv-skill-column-box">
+                  <div className="cv-subfield-header">
+                    <h4>Column {colIdx + 1}</h4>
                     <button
-                      className="cv-trash-btn"
-                      onClick={() => removeSkill(colIdx, sIdx)}
-                      title="Remove skill"
+                      className="cv-mini-add-btn"
+                      onClick={() => addSkill(colIdx)}
                     >
-                      <Trash2 size={13} />
+                      <Plus size={13} /> Add Skill
                     </button>
                   </div>
-                ))}
-              </div>
-            ))}
+                  {col.map((skill, sIdx) => (
+                    <div key={sIdx} className="cv-skill-edit-row">
+                      <input
+                        type="text"
+                        value={skill}
+                        onChange={(e) => updateSkill(colIdx, sIdx, e.target.value)}
+                      />
+                      <button
+                        className="cv-trash-btn"
+                        onClick={() => removeSkill(colIdx, sIdx)}
+                        title="Remove skill"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ))
+            )}
+
+            <div className="cv-field">
+              <label>Industries (optional, separate with commas)</label>
+              <ListTextInput
+                value={data.skills.industries || []}
+                onChange={(industries) =>
+                  setData((prev) => ({ ...prev, skills: { ...prev.skills, industries } }))
+                }
+                placeholder="e.g. Fintech, SaaS, E-Learning"
+              />
+              <p className="cv-help-text">Shown as one line under the skills, e.g. "INDUSTRIES: Fintech · SaaS".</p>
+            </div>
           </div>
         )}
 
@@ -483,10 +766,49 @@ function ResumeEditor({ data, setData, isOpen, onClose }) {
         {activeTab === 'experience' && (
           <div className="cv-form-section">
             <h3 className="cv-form-heading">Professional Experience</h3>
+            <div className="cv-field">
+              <label>Section Title</label>
+              <input
+                type="text"
+                value={data.experienceTitle ?? 'PROFESSIONAL EXPERIENCE'}
+                onChange={(e) => setData((prev) => ({ ...prev, experienceTitle: e.target.value }))}
+              />
+            </div>
+            <div className="cv-subfield-header">
+              <label>Jobs ({data.experiences.length})</label>
+              <button className="cv-mini-add-btn" onClick={addExperience}>
+                <Plus size={13} /> Add Job
+              </button>
+            </div>
             {data.experiences.map((exp, expIdx) => (
               <div key={exp.id || expIdx} className="cv-exp-card">
                 <div className="cv-exp-card-header">
                   <h4>Experience #{expIdx + 1}</h4>
+                  <div className="cv-subgroup-actions">
+                    <button
+                      className="cv-mini-add-btn"
+                      onClick={() => moveExperience(expIdx, -1)}
+                      disabled={expIdx === 0}
+                      title="Move up"
+                    >
+                      <ArrowUp size={12} />
+                    </button>
+                    <button
+                      className="cv-mini-add-btn"
+                      onClick={() => moveExperience(expIdx, 1)}
+                      disabled={expIdx === data.experiences.length - 1}
+                      title="Move down"
+                    >
+                      <ArrowDown size={12} />
+                    </button>
+                    <button
+                      className="cv-trash-btn"
+                      onClick={() => removeExperience(expIdx)}
+                      title="Delete this job"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
                 </div>
                 <div className="cv-field-grid">
                   <div className="cv-field">
@@ -622,6 +944,14 @@ function ResumeEditor({ data, setData, isOpen, onClose }) {
           <div className="cv-form-section">
             <h3 className="cv-form-heading">Education & Qualifications</h3>
             <div className="cv-field">
+              <label>Section Title</label>
+              <input
+                type="text"
+                value={data.education.title}
+                onChange={(e) => updateEducation('title', e.target.value)}
+              />
+            </div>
+            <div className="cv-field">
               <label>Degree / Certificate Level</label>
               <input
                 type="text"
@@ -646,7 +976,7 @@ function ResumeEditor({ data, setData, isOpen, onClose }) {
                 </button>
               </div>
 
-              {data.education.highlights.map((h, i) => (
+              {(data.education.highlights || []).map((h, i) => (
                 <div key={i} className="cv-edu-edit-row">
                   <textarea
                     rows={2}
@@ -669,6 +999,16 @@ function ResumeEditor({ data, setData, isOpen, onClose }) {
         {activeTab === 'languages' && (
           <div className="cv-form-section">
             <h3 className="cv-form-heading">Languages</h3>
+            <div className="cv-field">
+              <label>Section Title</label>
+              <input
+                type="text"
+                value={data.languages.title}
+                onChange={(e) =>
+                  setData((prev) => ({ ...prev, languages: { ...prev.languages, title: e.target.value } }))
+                }
+              />
+            </div>
             <div className="cv-subfield-header">
               <p className="cv-help-text" style={{ margin: 0 }}>
                 Languages are displayed in a clean balanced horizontal bar.
@@ -702,6 +1042,155 @@ function ResumeEditor({ data, setData, isOpen, onClose }) {
                 </button>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* TAB 7: DECLARATION */}
+        {activeTab === 'declaration' && (
+          <div className="cv-form-section">
+            <h3 className="cv-form-heading">Declaration</h3>
+            <div className="cv-field-toggle">
+              <label>Show Declaration on CV</label>
+              <button
+                className={`cv-toggle-btn ${data.declaration ? 'on' : 'off'}`}
+                onClick={() =>
+                  setData((prev) => ({
+                    ...prev,
+                    declaration: prev.declaration
+                      ? undefined
+                      : {
+                          title: 'DECLARATION',
+                          text: 'I hereby confirm that the particulars furnished by me are true and correct to the best of my knowledge and belief.',
+                          signature: prev.header.fullName
+                        }
+                  }))
+                }
+              >
+                {data.declaration ? <Eye size={14} /> : <EyeOff size={14} />}
+                <span>{data.declaration ? 'Visible' : 'Hidden'}</span>
+              </button>
+            </div>
+            <div className="cv-field">
+              <label>Section Title</label>
+              <input
+                type="text"
+                value={data.declaration?.title || ''}
+                disabled={!data.declaration}
+                onChange={(e) =>
+                  setData((prev) => ({
+                    ...prev,
+                    declaration: { ...prev.declaration, title: e.target.value }
+                  }))
+                }
+              />
+            </div>
+            <div className="cv-field">
+              <label>Declaration Statement</label>
+              <textarea
+                rows={3}
+                value={data.declaration?.text || ''}
+                onChange={(e) =>
+                  setData((prev) => ({
+                    ...prev,
+                    declaration: {
+                      ...(prev.declaration || { title: 'DECLARATION' }),
+                      text: e.target.value
+                    }
+                  }))
+                }
+              />
+            </div>
+            <div className="cv-field">
+              <label>Full Signature Name</label>
+              <input
+                type="text"
+                value={data.declaration?.signature || ''}
+                onChange={(e) =>
+                  setData((prev) => ({
+                    ...prev,
+                    declaration: {
+                      ...(prev.declaration || { title: 'DECLARATION' }),
+                      signature: e.target.value
+                    }
+                  }))
+                }
+              />
+            </div>
+          </div>
+        )}
+
+        {/* TAB 8: PDF EXPORT */}
+        {activeTab === 'pdf' && (
+          <div className="cv-form-section">
+            <h3 className="cv-form-heading">PDF Export</h3>
+            <div className="cv-field">
+              <label>File Name</label>
+              <input
+                type="text"
+                value={data.pdfFileName || ''}
+                placeholder={buildPdfFileName('', data.header.fullName).replace(/\.pdf$/, '')}
+                onChange={(e) => setData((prev) => ({ ...prev, pdfFileName: e.target.value }))}
+              />
+              <p className="cv-help-text">
+                Downloads as <strong>{buildPdfFileName(data.pdfFileName, data.header.fullName)}</strong>
+              </p>
+            </div>
+
+            <div className="cv-field">
+              <label>PDF Type</label>
+              <div className="cv-choice-list">
+                {[
+                  {
+                    value: 'vector',
+                    title: 'Real PDF (recommended)',
+                    desc: 'True text that stays sharp at any zoom, best for recruiter systems. About 0.45 MB. Opens the print window: choose "Save as PDF".'
+                  },
+                  {
+                    value: 'image',
+                    title: 'Picture PDF',
+                    desc: 'Downloads directly, no print window. Each page is an image with hidden readable text.'
+                  }
+                ].map((opt) => (
+                  <button
+                    key={opt.value}
+                    className={`cv-choice ${pdfMode === opt.value ? 'active' : ''}`}
+                    onClick={() => setPdfMode(opt.value)}
+                  >
+                    <span className="cv-choice-title">{opt.title}</span>
+                    <span className="cv-choice-desc">{opt.desc}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {pdfMode === 'image' && (
+              <div className="cv-field">
+                <label>Picture Quality</label>
+                <div className="cv-choice-list">
+                  {[
+                    { value: 'high', title: 'High quality', desc: 'Sharpest text and original photo. About 1.3 MB.' },
+                    { value: 'small', title: 'Smaller file', desc: 'For email or job sites with upload limits. About 0.5 MB.' }
+                  ].map((opt) => (
+                    <button
+                      key={opt.value}
+                      className={`cv-choice ${pdfQuality === opt.value ? 'active' : ''}`}
+                      onClick={() => setPdfQuality(opt.value)}
+                    >
+                      <span className="cv-choice-title">{opt.title}</span>
+                      <span className="cv-choice-desc">{opt.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {pdfMode === 'vector' && (
+              <p className="cv-help-text">
+                In the print window: set <strong>Destination → Save as PDF</strong>. If you see headers
+                and footers (date, page URL), open <strong>More settings</strong> and untick
+                <strong> Headers and footers</strong>.
+              </p>
+            )}
           </div>
         )}
       </div>

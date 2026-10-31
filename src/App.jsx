@@ -1,18 +1,39 @@
-import React, { useState, useEffect, useDeferredValue, useCallback } from 'react';
+import React, { useState, useEffect, useDeferredValue, useCallback, useRef } from 'react';
 import Toolbar from './components/Toolbar';
 import ResumePreview from './components/ResumePreview';
 import ResumeEditor from './components/ResumeEditor';
-import { asrifResumeData, rifkanResumeData } from './data/resumeData';
-import { exportResumeToPdf } from './utils/exportPdf';
+import { asrifResumeData, rifkanResumeData, fazilResumeData } from './data/resumeData';
+import { exportResumeToPdf, buildPdfFileName } from './utils/exportPdf';
+import { loadSaved, save, removeSaved, loadResume, saveResume } from './utils/storage';
+import { useHistoryState } from './utils/useHistoryState';
 import { Eye, Edit3, Sliders, FileDown, Loader2 } from 'lucide-react';
 
+const PRESET_DATA = {
+  asrif: asrifResumeData,
+  rifkan: rifkanResumeData,
+  fazil: fazilResumeData
+};
+
+const savedSettings = loadSaved('settings', {});
+const initialPreset = PRESET_DATA[savedSettings.selectedPreset] ? savedSettings.selectedPreset : 'fazil';
+
 export default function App() {
-  const [data, setData] = useState(rifkanResumeData);
-  const [selectedPreset, setSelectedPreset] = useState('rifkan');
-  const [pageMode, setPageMode] = useState('auto');
+  const {
+    state: data,
+    setState: setData,
+    undo,
+    redo,
+    reset: resetData,
+    canUndo,
+    canRedo
+  } = useHistoryState(() => loadResume(initialPreset, PRESET_DATA[initialPreset]));
+  const [selectedPreset, setSelectedPreset] = useState(initialPreset);
+  const [pageMode, setPageMode] = useState(savedSettings.pageMode || 'auto');
   const [scale, setScale] = useState(0.85);
-  const [spacingDensity, setSpacingDensity] = useState('normal'); // 'compact' | 'normal' | 'spacious'
-  const [fontFamily, setFontFamily] = useState('playfair'); // 'playfair' | 'lora' | 'inter'
+  const [spacingDensity, setSpacingDensity] = useState(savedSettings.spacingDensity || 'normal'); // 'compact' | 'normal' | 'spacious'
+  const [fontFamily, setFontFamily] = useState(savedSettings.fontFamily || 'playfair'); // 'playfair' | 'lora' | 'inter'
+  const [pdfQuality, setPdfQuality] = useState(savedSettings.pdfQuality || 'high'); // 'high' | 'small'
+  const [pdfMode, setPdfMode] = useState(savedSettings.pdfMode || 'vector'); // 'vector' (real text PDF) | 'image' (picture download)
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [isMobileToolsOpen, setIsMobileToolsOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -47,28 +68,98 @@ export default function App() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
+  // Autosave the current resume (per preset) shortly after each edit
+  const storageWarnedRef = useRef(false);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!saveResume(selectedPreset, PRESET_DATA[selectedPreset], data) && !storageWarnedRef.current) {
+        storageWarnedRef.current = true;
+        showToast('Autosave failed: browser storage is full or blocked. Use "JSON" to back up.');
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [data, selectedPreset]);
+
+  useEffect(() => {
+    save('settings', { selectedPreset, pageMode, spacingDensity, fontFamily, pdfQuality, pdfMode });
+  }, [selectedPreset, pageMode, spacingDensity, fontFamily, pdfQuality, pdfMode]);
+
   const handleSelectPreset = (presetKey) => {
+    // Flush the current preset's edits before switching away
+    saveResume(selectedPreset, PRESET_DATA[selectedPreset], data);
     setSelectedPreset(presetKey);
+    resetData(loadResume(presetKey, PRESET_DATA[presetKey]));
     if (presetKey === 'asrif') {
-      setData(asrifResumeData);
       setPageMode('two-page');
       showToast('Loaded "Asrif Ahamed" Reference CV (2 Pages)');
     } else if (presetKey === 'rifkan') {
-      setData(rifkanResumeData);
       setPageMode('auto');
       showToast('Loaded "Mohamed Riskan" Resume (with your photo)');
+    } else if (presetKey === 'fazil') {
+      setPageMode('auto');
+      showToast('Loaded "Fazil Muhammad" Resume (Motion Graphics & Video Editor)');
     }
   };
+
+  const handleResetPreset = () => {
+    if (!window.confirm('Discard all your edits to this CV and restore the original content?')) return;
+    removeSaved(`data:${selectedPreset}`);
+    setData(PRESET_DATA[selectedPreset]);
+    showToast('Restored the original CV content (Ctrl+Z to undo)');
+  };
+
+  // Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z undo & redo, also while typing in the editor
+  // (controlled inputs can't use the browser's native undo reliably)
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+      const key = e.key.toLowerCase();
+      if (key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      } else if (key === 'y' || (key === 'z' && e.shiftKey)) {
+        e.preventDefault();
+        redo();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [undo, redo]);
 
   const handlePrint = () => {
     window.print();
   };
 
+  // Real (vector) PDF: the browser's own "Save as PDF" renders the print layout
+  // with selectable text, embedded fonts and clickable links. Browsers use the
+  // page title as the suggested file name.
+  const handleSaveRealPdf = () => {
+    const prevTitle = document.title;
+    document.title = buildPdfFileName(data.pdfFileName, data.header.fullName).replace(/\.pdf$/, '');
+    const restoreTitle = () => {
+      document.title = prevTitle;
+      window.removeEventListener('afterprint', restoreTitle);
+    };
+    window.addEventListener('afterprint', restoreTitle);
+    showToast('Choose "Save as PDF" as the printer, then click Save');
+    // Let the toast paint before the print dialog blocks the page
+    setTimeout(() => {
+      window.print();
+      restoreTitle();
+    }, 150);
+  };
+
   const handleExportPdf = async () => {
+    if (pdfMode === 'vector') {
+      handleSaveRealPdf();
+      return;
+    }
     setIsExporting(true);
     await exportResumeToPdf({
       data,
-      onStart: () => showToast('Generating high-res A4 PDF...'),
+      fileName: data.pdfFileName,
+      quality: pdfQuality,
+      onStart: () => showToast(pdfQuality === 'small' ? 'Generating compact A4 PDF...' : 'Generating high-res A4 PDF...'),
       onComplete: (filename) => {
         setIsExporting(false);
         showToast(`Downloaded "${filename}"`);
@@ -105,6 +196,11 @@ export default function App() {
         onPrint={handlePrint}
         onExportPdf={handleExportPdf}
         isExporting={isExporting}
+        onResetPreset={handleResetPreset}
+        onUndo={undo}
+        onRedo={redo}
+        canUndo={canUndo}
+        canRedo={canRedo}
       />
 
       {/* Main Workspace Area */}
@@ -127,6 +223,10 @@ export default function App() {
           setData={setData}
           isOpen={isEditorOpen}
           onClose={() => setIsEditorOpen(false)}
+          pdfQuality={pdfQuality}
+          setPdfQuality={setPdfQuality}
+          pdfMode={pdfMode}
+          setPdfMode={setPdfMode}
         />
       </div>
 

@@ -314,6 +314,216 @@ export const rifkanResumeData = {
   }
 };
 
+export const fazilResumeData = {
+  header: {
+    fullName: "FAZIL MUHAMMAD",
+    jobTitle: "MOTION GRAPHICS DESIGNER & VIDEO EDITOR | AI",
+    photoUrl: "/Fazil.jpg",
+    showPhoto: true,
+    hideContactBullets: true,
+    contacts: [
+      { label: "Experience", value: "3+ Years" },
+      { label: "Address", value: "Sri Lanka" },
+      { label: "Mobile", value: "+94 75 767 7710", link: "tel:+94757677710" },
+      { label: "E-Mail", value: "fazilmuhammad304@gmail.com", link: "mailto:fazilmuhammad304@gmail.com" },
+      { label: "Linkedin", value: "Fazil Muhammad", link: "https://www.linkedin.com/in/fazil-muhammad-749a62367/" },
+      { label: "Portfolio", value: "View Portfolio", link: "https://docs.google.com/spreadsheets/d/1fUcslYZnXFAl3ynCULzTWCEnwk7o23pTXJOy9qTBmkU/edit?usp=sharing" }
+    ]
+  },
+  theme: {
+    bannerColor: "#0f2b48",
+    bannerTextColor: "#ffffff",
+    bannerSubColor: "#c8daf0",
+    headingColor: "#111827",
+    borderColor: "#000000",
+    fontFamily: "serif"
+  },
+  summary: {
+    title: "PROFESSIONAL SUMMARY",
+    content:
+      "Results-driven Motion Graphics Designer and Video Editor with 3+ years of experience producing high-impact visual content for brands and digital platforms. I specialise in combining professional motion design and editing expertise with cutting-edge AI-powered workflows, enabling faster turnarounds, richer creative exploration, and premium-quality output for every client project. I own the full production pipeline, from concept development, research, and scriptwriting to AI-assisted visual generation, animation, editing, and final delivery. My expertise covers promotional campaigns, social media content, brand videos, and animated designs, all built on strong visual storytelling. I'm committed to creating modern, scroll-stopping visuals that capture attention, communicate clearly, and consistently exceed client expectations."
+  },
+  skills: {
+    title: "KEY SKILLS",
+    groups: [
+      {
+        heading: "MOTION & CONTENT",
+        items: [
+          "Motion Graphics",
+          "AI-Powered Motion Workflow",
+          "2D & 3D Animation",
+          "Video Editing",
+          "Colour Grading",
+          "Marketing & Promotional Videos",
+          "AI-Powered Video",
+          "AI Video Generation",
+          "SaaS Explainer Videos",
+          "Social Media Content",
+          "Tutorial & Onboarding Videos",
+          "Podcast Video Editing",
+          "Brand Identity & Motion Branding",
+          "Creative Direction"
+        ]
+      },
+      {
+        heading: "SOFTWARE & AI TOOLS",
+        items: [
+          "Adobe After Effects",
+          "Adobe Premiere Pro",
+          "DaVinci Resolve Studio",
+          "Adobe Photoshop",
+          "Adobe Illustrator",
+          "Blender (3D)",
+          "Figma (UI/UX)",
+          "Google Flow (Veo)",
+          "Google Gemini",
+          "Nano Banana (Gemini)",
+          "Runway",
+          "Kling AI",
+          "ElevenLabs",
+          "Adobe Podcast",
+          "Topaz Video AI",
+          "ChatGPT",
+          "Claude"
+        ]
+      },
+      {
+        heading: "STRATEGY & INDUSTRIES",
+        items: [
+          "Visual Storytelling",
+          "Brand Visual Development",
+          "Concept Development",
+          "Scriptwriting & Storyboarding",
+          "Forex & Trading",
+          "Crypto & Web3",
+          "Fintech",
+          "SaaS",
+          "Digital Products & Apps",
+          "E-Learning"
+        ]
+      }
+    ]
+  },
+  experiences: [
+    {
+      id: "exp-fazil-1",
+      jobTitle: "SENIOR MOTION DESIGNER",
+      company: "Hytham Studios",
+      location: "Sri Lanka | Full-time",
+      dateRange: "JAN 2025 – PRESENT",
+      sections: [
+        {
+          heading: "",
+          items: [
+            {
+              label: "Creative Direction & Motion Graphics",
+              text: "Lead end-to-end creative production for multiple client brands, owning creative direction, concept development, design, animation, and final delivery. Create high-impact website and product promo videos that showcase client offerings and drive engagement."
+            },
+            {
+              label: "AI-Powered Production",
+              text: "Built an AI-integrated production pipeline with Google Flow (Veo) and Gemini, enabling faster turnaround, fewer revisions, and consistently high-quality output on large-scale projects. Produce high-engagement social media content and short-form clips by combining motion graphics with AI-generated visuals and AI-assisted editing."
+            },
+            {
+              label: "Educational Content",
+              text: "Directed a full educational video series from concept to final delivery using an AI-enhanced production workflow. Strong client approval led to a follow-up project with the same client."
+            },
+            {
+              label: "Tutorial Production",
+              text: "Currently producing a website tutorial and onboarding video series, combining 2D and 3D animation with AI-assisted asset creation to simplify complex product features."
+            },
+            {
+              label: "Branding & Animation",
+              text: "Develop brand identities and animated brand assets for new clients, using AI for rapid concept exploration before refining final designs by hand."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      id: "exp-fazil-2",
+      jobTitle: "MOTION GRAPHICS DESIGNER & VIDEO EDITOR",
+      company: "Wayond — Dubai, UAE",
+      location: "Remote",
+      dateRange: "2025 – PRESENT",
+      sections: [
+        {
+          heading: "",
+          items: [
+            {
+              label: "Promotional Videos",
+              text: "Create marketing and promotional animated videos for ISSIX (formerly IS6FX), an international forex broker, using AI tools to speed up ideation and production."
+            },
+            {
+              label: "Team Production",
+              text: "Handled motion design and colour grading for a FundedFast promo video as part of a directed production team, delivering a polished final cut that received strong client appreciation."
+            },
+            {
+              label: "Tutorial Production",
+              text: "Design and produce trading platform walkthroughs and website tutorial videos for ISSIX that improve user onboarding."
+            },
+            {
+              label: "Educational Content",
+              text: "Develop animated educational content for ISSIX Academy, with original hand-crafted visuals and AI-assisted scripting."
+            },
+            {
+              label: "Podcast & Social",
+              text: "Edit podcast videos and repurpose them into social media clips using AI-assisted editing workflows."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      id: "exp-fazil-3",
+      jobTitle: "FREELANCE MOTION GRAPHICS DESIGNER & VIDEO EDITOR",
+      company: "Fiverr",
+      location: "Remote",
+      dateRange: "2023 – PRESENT",
+      sections: [
+        {
+          heading: "",
+          items: [
+            {
+              label: "Global Client Delivery",
+              text: "Delivered 100+ videos for clients worldwide across SaaS, fintech, crypto, Web3, and digital product industries."
+            },
+            {
+              label: "SaaS & Digital Products",
+              text: "Produced SaaS product videos, feature explainers, and app walkthroughs that communicate complex software clearly."
+            },
+            {
+              label: "Diverse Content Types",
+              text: "Created promotional videos, product demos, website promos, app showcases, and storytelling content tailored to each client's brand and audience."
+            },
+            {
+              label: "End-to-End Project Management",
+              text: "Managed projects independently from creative brief to final delivery."
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  education: {
+    title: "EDUCATION",
+    degree: "Bachelor of Information and Communication Technology (Honours)",
+    institution: "Rajarata University of Sri Lanka — Faculty of Technology",
+    highlights: []
+  },
+  languages: {
+    title: "LANGUAGES",
+    items: [
+      { name: "English", level: "Fluent" },
+      { name: "Tamil", level: "Native" }
+    ]
+  },
+  declaration: {
+    title: "DECLARATION",
+    text: "I hereby confirm that the particulars furnished by me are true and correct to the best of my knowledge and belief.",
+    signature: "FAZIL MUHAMMAD"
+  }
+};
+
 export const colorThemes = [
   { name: "Original Deep Teal", hex: "#134653", subHex: "#d2e7ec" },
   { name: "Executive Navy", hex: "#0f2b48", subHex: "#c8daf0" },
